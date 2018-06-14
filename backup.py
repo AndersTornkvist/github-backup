@@ -83,6 +83,8 @@ def main():
 
     token = config["token"]
     path = os.path.expanduser(config["directory"])
+
+    all_repos = config.get('all_repos')
     if mkdir(path):
         print("Created directory {0}".format(path), file=sys.stderr)
 
@@ -92,6 +94,9 @@ def main():
             name = check_name(repo["name"])
             owner = check_name(repo["owner"]["login"])
             clone_url = repo["clone_url"]
+
+            if not all_repos and owner != user['login']:
+                continue
 
             owner_path = os.path.join(path, owner)
             mkdir(owner_path)
