@@ -60,9 +60,9 @@ def mirror(repo_name, repo_url, to_path, username, token):
         subprocess.call(["git", "clone", "--mirror", repo_url], cwd=to_path)
     else:
         print("updating existing repository: {path}".format(path=repo_path))
-        subprocess.call(["git", "remote", "update"], cwd=repo_path)
+        subprocess.call(["git", "remote", "update", "--prune"], cwd=repo_path)
 
-    subprocess.call(["git", "lfs", "fetch", "--all"], cwd=repo_path)
+    subprocess.call(["git", "lfs", "fetch", "--all", "--prune"], cwd=repo_path)
 
 def main():
     parser = argparse.ArgumentParser(description="Backup GitHub repositories")
