@@ -6,10 +6,13 @@ import sys
 import json
 import errno
 import argparse
-import urlparse
 import requests
 import subprocess
 
+if sys.version_info[0] < 3:
+    import urlparse
+else:
+    from urllib import parse as urlparse
 
 def get_json(url, token):
     while True:
@@ -32,7 +35,7 @@ def check_name(name):
 
 def mkdir(path):
     try:
-        os.makedirs(path, 0770)
+        os.makedirs(path, 0o770)
     except OSError as ose:
         if ose.errno != errno.EEXIST:
             raise
@@ -50,19 +53,16 @@ def mirror(repo_name, repo_url, to_path, username, token):
     )
     repo_url = urlparse.urlunparse(modified)
 
-    repo_path = os.path.join(to_path, repo_name)
-    mkdir(repo_path)
+    repo_path = os.path.join(to_path, repo_name + ".git")
 
-    # git-init manual:
-    # "Running git init in an existing repository is safe."
-    subprocess.call(["git", "init", "--bare", "--quiet"], cwd=repo_path)
+    if mkdir(repo_path):
+        print("cloning new repository: {path}".format(path=repo_path))
+        subprocess.call(["git", "clone", "--mirror", repo_url], cwd=to_path)
+    else:
+        print("updating existing repository: {path}".format(path=repo_path))
+        subprocess.call(["git", "remote", "update"], cwd=repo_path)
 
-    # https://github.com/blog/1270-easier-builds-and-deployments-using-git-over-https-and-oauth:
-    # "To avoid writing tokens to disk, don't clone."
-    subprocess.call(["git", "fetch", "--force", "--prune", "--tags",
-                     repo_url, "refs/heads/*:refs/heads/*"],
-                    cwd=repo_path)
-
+    subprocess.call(["git", "lfs", "fetch", "--all"], cwd=repo_path)
 
 def main():
     parser = argparse.ArgumentParser(description="Backup GitHub repositories")
