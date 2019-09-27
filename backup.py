@@ -51,18 +51,26 @@ def mirror(repo_name, repo_url, to_path, username, token):
         token=token,
         netloc=parsed.netloc
     )
-    repo_url = urlparse.urlunparse(modified)
+    repo_url_with_token = urlparse.urlunparse(modified)
 
     repo_path = os.path.join(to_path, repo_name + ".git")
 
+    # clone or fetch repo
     if mkdir(repo_path):
         print("cloning new repository: {path}".format(path=repo_path))
-        subprocess.call(["git", "clone", "--mirror", repo_url], cwd=to_path)
+        subprocess.call(["git", "clone", "--mirror", repo_url_with_token], cwd=to_path)
     else:
         print("updating existing repository: {path}".format(path=repo_path))
+        subprocess.call(["git", "remote", "set-url", "origin", repo_url_with_token], cwd=repo_path)
         subprocess.call(["git", "remote", "update", "--prune"], cwd=repo_path)
 
+    # git lfs fetch
     subprocess.call(["git", "lfs", "fetch", "--all", "--prune"], cwd=repo_path)
+
+    # remove token from remote url
+    subprocess.call(["git", "remote", "set-url", "origin", repo_url], cwd=repo_path)
+
+    print("done")
 
 def main():
     parser = argparse.ArgumentParser(description="Backup GitHub repositories")
